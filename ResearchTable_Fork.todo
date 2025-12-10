@@ -1,0 +1,625 @@
+# Research Table 1.12.2 → 1.20.1 Port TODO
+
+## Phase 1: Build System & Project Setup
+
+### 1.1 Update Gradle Configuration
+✔ - Update build.gradle to use ForgeGradle 6.0.+ @done (12/10/2025, 11:01:21 AM)
+✔ - Change Java toolchain from Java 8 to Java 17 @done (12/10/2025, 11:12:05 AM)
+✔ - Update Minecraft version to 1.20.1 @done (12/10/2025, 11:12:10 AM)
+✔ - Update Forge version to 1.20.1-47.2.0 (or latest) @done (12/10/2025, 11:14:00 AM)
+✔ - Update mappings to 'official' 1.20.1 (replaces old MCP mappings) @done (12/10/2025, 11:18:12 AM)
+☐ - Configure runs block for client/server with new structure
+☐ - Update gradle wrapper to 8.x if needed
+☐ - Remove old `@Mod.EventBusSubscriber` references if using DeferredRegister
+
+### 1.2 Update Project Metadata
+☐ - Create src/main/resources/META-INF/mods.toml (replaces mcmod.info)
+    - Set loaderVersion="[47,)" for Forge 1.20.1
+    - Set modId, version, displayName, description
+    - Add license, credits, authors, displayURL
+    - Specify dependencies (Forge, Minecraft version ranges)
+☐ - Delete old mcmod.info file
+☐ - Update pack.mcmeta format version to 15 for 1.20.1
+☐ - Update research_at.cfg if using Access Transformers (syntax changed)
+
+### 1.3 Dependencies
+☐ - Identify all plugin dependencies and their 1.20.1 equivalents:
+    - CraftTweaker → ContentTweaker/CraftTweaker (check if ported)
+    - GameStages (check 1.20.1 availability)
+    - ItemStages (check 1.20.1 availability)
+    - Reskillable (check 1.20.1 availability)
+    - GrandEconomy (check 1.20.1 availability)
+    - HWYLA → WTHIT or Jade for 1.20.1
+    - The One Probe (TOP) - check 1.20.1 version
+    - JEI → JEI for 1.20.1
+    - TogetherForever (check 1.20.1 availability)
+
+---
+
+## Phase 2: Core Mod Class & Registration
+
+### 2.1 Main Mod Class (ResearchTable.java)
+☐ - Change @Mod annotation (no clientSideOnly/serverSideOnly)
+☐ - Update imports: net.minecraft.* packages reorganized
+☐ - Replace @Mod.EventHandler with FMLJavaModLoadingContext
+☐ - Add constructor that registers to mod event bus
+☐ - Update preInit → FMLCommonSetupEvent
+☐ - Update init → InterModEnqueueEvent (if needed)
+☐ - Update postInit → InterModProcessEvent (if needed)
+☐ - Change logger from LogManager to com.mojang.logging.LogUtils
+☐ - Remove @SidedProxy - use DistExecutor instead
+☐ - Update @Mod.Instance to private static field pattern
+
+### 2.2 Create DeferredRegisters (ResearchTableModule.java)
+☐ - Create DeferredRegister<Block> for blocks
+☐ - Create DeferredRegister<Item> for items
+☐ - Create DeferredRegister<BlockEntityType<?>> for tile entities
+☐ - Create DeferredRegister<MenuType<?>> for containers
+☐ - Create DeferredRegister<RecipeSerializer<?>> if custom recipes
+☐ - Create DeferredRegister<RecipeType<?>> if custom recipe types
+☐ - Create DeferredRegister<CreativeModeTab> for creative tabs
+☐ - Register all DeferredRegisters to mod event bus in main class
+☐ - Convert all old registry entries to RegistryObject<T>
+
+### 2.3 Remove Old Registration Code
+☐ - Remove @GameRegistry.ObjectHolder annotations
+☐ - Remove RegistryEvent.Register<T> event handlers
+☐ - Remove manual registry.register() calls
+☐ - Update all static references to use RegistryObject.get()
+
+---
+
+## Phase 3: Blocks & BlockEntities
+
+### 3.1 Update BlockTable.java
+☐ - Extend Block or BaseEntityBlock (if has BlockEntity)
+☐ - Constructor: Block.Properties → BlockBehaviour.Properties.of()
+☐ - Replace Material with MapColor
+☐ - Update hardness/resistance → strength(float, float)
+☐ - Update light value → lightLevel(state -> int)
+☐ - Change EnumFacing to Direction
+☐ - Update FACING property to use DirectionalBlock or HorizontalDirectionalBlock
+☐ - Replace IBlockState with BlockState
+☐ - Update onBlockActivated → use(BlockState, Level, BlockPos, Player, InteractionHand, BlockHitResult)
+☐ - Return InteractionResult instead of boolean
+☐ - Update World to Level
+☐ - Change TileEntity retrieval to level.getBlockEntity(pos)
+☐ - Update BlockStateContainer → createBlockStateDefinition(StateDefinition.Builder)
+☐ - Update getStateFromMeta/getMetaFromState → removed (states auto-serialize)
+☐ - Add getShape() for block collision/outline
+☐ - Update getRenderType() → RenderShape enum
+☐ - Change hasTileEntity() → newBlockEntity() in BaseEntityBlock
+☐ - Update rotateBlock → rotate(BlockState, Rotation)
+
+### 3.2 Update TileTable.java → BlockEntity
+☐ - Rename TileEntity to BlockEntity
+☐ - Constructor: Add BlockPos and BlockState parameters
+☐ - Call super(BlockEntityType, BlockPos, BlockState)
+☐ - Update readFromNBT → load(CompoundTag)
+☐ - Update writeToNBT → saveAdditional(CompoundTag)
+☐ - Remove markDirty() calls → setChanged()
+☐ - Update getUpdateTag() for client sync
+☐ - Update getUpdatePacket() → ClientboundBlockEntityDataPacket.create(this)
+☐ - Change NBTTagCompound to CompoundTag throughout
+☐ - Update capability system to LazyOptional<T>
+☐ - Implement invalidateCaps() for capability cleanup
+☐ - Update ITickableTileEntity → BlockEntityTicker pattern
+☐ - If tickable, create static tick method and register in Block class
+
+### 3.3 BlockEntity Registration
+☐ - Register BlockEntityType using DeferredRegister
+☐ - Use BlockEntityType.Builder.of() with supplier and blocks
+☐ - Remove GameRegistry.registerTileEntity()
+☐ - Update all references to use registered BlockEntityType
+
+### 3.4 Block Models & Textures
+☐ - Update blockstate JSON format if needed (usually compatible)
+☐ - Check model JSON files for deprecated properties
+☐ - Verify texture paths still work
+☐ - Update block model parent references if changed
+
+---
+
+## Phase 4: Items & Creative Tabs
+
+### 4.1 Update Items
+☐ - Replace Item.Properties with new builder pattern
+☐ - Update setCreativeTab() → new CreativeModeTab system
+☐ - Change setUnlocalizedName() → removed (use lang files)
+☐ - Update setRegistryName() → handled by DeferredRegister
+☐ - Update ItemStack constructors (count parameter moved)
+☐ - Change getItemStackDisplayName() → getHoverName()
+☐ - Update item capability system to LazyOptional
+
+### 4.2 BlockItems
+☐ - Ensure each block has corresponding BlockItem registered
+☐ - Use BlockItem constructor with Block and Item.Properties
+☐ - Add to creative tab via CreativeModeTab.builder()
+
+### 4.3 Creative Tabs
+☐ - Create CreativeModeTab using builder pattern
+☐ - Set icon with icon() method
+☐ - Set title with title() method
+☐ - Add items with displayItems() method
+☐ - Register using DeferredRegister<CreativeModeTab>
+
+---
+
+## Phase 5: Container/Menu System
+
+### 5.1 Update ContainerTable.java → Menu
+☐ - Rename Container to AbstractContainerMenu (or specific type)
+☐ - Update constructor to take MenuType and containerId
+☐ - Change IInventory to Container interface
+☐ - Update Slot system (mostly compatible, check imports)
+☐ - Change canInteractWith() → stillValid(Player)
+☐ - Update transferStackInSlot() → quickMoveStack() signature
+☐ - Update ItemStack handling (copy() behavior changed)
+☐ - Add ContainerLevelAccess for position checking
+
+### 5.2 MenuType Registration
+☐ - Create DeferredRegister<MenuType<?>>
+☐ - Use IForgeMenuType.create() for network-synced data
+☐ - Register MenuType with factory method
+☐ - Update container opening code to use NetworkHooks.openScreen()
+
+### 5.3 Update GuiHandler
+☐ - Remove IGuiHandler implementation
+☐ - Remove NetworkRegistry.INSTANCE.registerGuiHandler()
+☐ - Replace with MenuProvider interface on BlockEntity
+☐ - Implement getDisplayName() and createMenu()
+☐ - Use NetworkHooks.openScreen(ServerPlayer, MenuProvider, BlockPos)
+
+---
+
+## Phase 6: Client-Side GUI
+
+### 6.1 Update GuiTable.java
+☐ - Extend AbstractContainerScreen<ContainerTable>
+☐ - Update imports for client-side classes
+☐ - Change GuiContainer to AbstractContainerScreen
+☐ - Update constructor signature (Menu, Inventory, Component)
+☐ - Change drawGuiContainerBackgroundLayer() → renderBg(GuiGraphics, float, int, int)
+☐ - Change drawGuiContainerForegroundLayer() → renderLabels(GuiGraphics, int, int)
+☐ - Update GlStateManager calls → RenderSystem
+☐ - Replace Minecraft.getMinecraft().getTextureManager() → new system
+☐ - Update ResourceLocation for texture binding
+☐ - Change FontRenderer to Font
+☐ - Update drawString() → drawString(GuiGraphics)
+☐ - Update button rendering system (changed significantly)
+☐ - Add GuiGraphics parameter to all render methods
+
+### 6.2 Update Custom GUI Components
+☐ - ComponentButtonList.java: Update to new button system
+☐ - ComponentResearchDetail.java: Update rendering
+☐ - ComponentResearchList.java: Update rendering
+☐ - ComponentResearchProgress.java: Update rendering
+☐ - GuiButtonStack.java: Extend Button class with new signature
+☐ - GuiControlSpecial.java: Update control rendering
+☐ - Change GuiButton to Button with proper constructor
+☐ - Update button click handling to onPress(Button)
+☐ - Update tooltip rendering to use GuiGraphics
+
+### 6.3 Client Registration
+☐ - Create client-side event handler class
+☐ - Register MenuScreens in FMLClientSetupEvent
+☐ - Use MenuScreens.register(MenuType, ScreenConstructor)
+☐ - Register any rendering handlers for blocks/entities
+☐ - Register client-side key bindings if needed
+
+---
+
+## Phase 7: Networking
+
+### 7.1 Update NetworkChannel.java
+☐ - Replace SimpleNetworkWrapper with NetworkRegistry.newSimpleChannel()
+☐ - Update protocol version checking
+☐ - Change IMessage to record or class with encode/decode/handle
+☐ - Update packet registration with messageBuilder()
+☐ - Add .encoder(), .decoder(), .consumerMainThread()
+☐ - Update message handling to use Supplier<NetworkEvent.Context>
+☐ - Call ctx.get().setPacketHandled(true)
+☐ - Use ctx.get().enqueueWork() for main thread tasks
+
+### 7.2 Update Packet Classes
+☐ - PacketResearchChanged.java:
+    ☐ - Implement encode(FriendlyByteBuf)
+    ☐ - Implement decode(FriendlyByteBuf) constructor
+    ☐ - Update handle(Supplier<NetworkEvent.Context>)
+    ☐ - Change ByteBuf to FriendlyByteBuf
+    ☐ - Update packet data serialization
+☐ - PacketSyncClient.java:
+    ☐ - Same updates as above
+    ☐ - Update client-side handling
+
+### 7.3 Network Communication
+☐ - Update sendToServer() calls
+☐ - Update sendTo(player) to sendToPlayer()
+☐ - Use PacketDistributor for targeting
+☐ - Update client/server message handling separation
+
+---
+
+## Phase 8: Data Storage & NBT
+
+### 8.1 Update DataStorage.java
+☐ - Change WorldSavedData to SavedData
+☐ - Update constructor to take CompoundTag
+☐ - Change readFromNBT() → load(CompoundTag)
+☐ - Change writeToNBT() → save(CompoundTag)
+☐ - Update markDirty() → setDirty()
+☐ - Change getName() → getId()
+☐ - Update registration with DimensionDataStorage
+☐ - Use server.overworld().getDataStorage()
+
+### 8.2 NBT Changes Throughout
+☐ - NBTTagCompound → CompoundTag
+☐ - NBTTagList → ListTag
+☐ - NBTTagString → StringTag
+☐ - getInteger() → getInt()
+☐ - setInteger() → putInt()
+☐ - setString() → putString()
+☐ - hasKey() → contains()
+☐ - getCompoundTag() → getCompound()
+☐ - getTagList() → getList()
+☐ - Update all NBT read/write methods
+
+---
+
+## Phase 9: Commands
+
+### 9.1 Update CommandResearch.java
+☐ - Implement Command interface (new system completely different)
+☐ - Use Commands.literal() and Commands.argument()
+☐ - Build command tree with .then() and .executes()
+☐ - Update command registration in FMLServerStartingEvent
+☐ - Change ICommandSender to CommandSourceStack
+☐ - Update command execution context
+☐ - Use CommandContext<CommandSourceStack>
+☐ - Update permission checking
+☐ - Update player retrieval from context
+☐ - Change TextComponentString to Component.literal()
+☐ - Update command feedback messages
+
+### 9.2 Command Arguments
+☐ - Replace custom argument parsing with built-in argument types
+☐ - Use EntityArgument.player() for player arguments
+☐ - Use StringArgumentType for string arguments
+☐ - Use IntegerArgumentType for integers
+☐ - Update argument retrieval with proper methods
+
+---
+
+## Phase 10: Events
+
+### 10.1 Update Event Classes
+☐ - EventOpenTable.java:
+    ☐ - Update Event class imports
+    ☐ - Check if custom event still needed
+    ☐ - Update event posting with MinecraftForge.EVENT_BUS.post()
+    ☐ - Update @SubscribeEvent handlers
+☐ - EventShowItemCondition.java:
+    ☐ - Update client-side event registration
+    ☐ - Update rendering event hooks (changed)
+
+### 10.2 Event Bus Registration
+☐ - Separate mod event bus from Forge event bus
+☐ - Register @Mod.EventBusSubscriber with appropriate bus
+☐ - Use @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+☐ - Update event class references (many moved/renamed)
+
+---
+
+## Phase 11: Research System Core
+
+### 11.1 Update Core Classes
+☐ - Research.java:
+    ☐ - Update ItemStack handling
+    ☐ - Update ResourceLocation usage
+    ☐ - Update NBT serialization
+    ☐ - Update JSON parsing if using Gson
+☐ - ResearchCategory.java:
+    ☐ - Update similar to Research.java
+☐ - ResearchList.java:
+    ☐ - Update collection handling
+    ☐ - Update file I/O if reading research files
+
+### 11.2 Update Conditions (ICondition implementations)
+☐ - ConditionTypes.java: Update registry system
+☐ - Update all condition implementations for API changes
+☐ - Update JSON deserialization
+
+### 11.3 Update Criteria (ICriterion implementations)
+☐ - CriterionResearchCount.java: Update advancement integration
+☐ - CriterionResearches.java: Update advancement integration
+☐ - CriterionScore.java: Update advancement integration
+☐ - Update to new advancement trigger system if used
+
+### 11.4 Update Rewards (IReward implementations)
+☐ - RewardExecute.java: Update command execution
+☐ - RewardItems.java: Update ItemStack handling
+☐ - Update player inventory interaction
+
+---
+
+## Phase 12: Team System
+
+### 12.1 Update Team Classes
+☐ - TeamHelper.java:
+    ☐ - Update player team retrieval
+    ☐ - Update scoreboard API calls
+    ☐ - Update player references
+☐ - TeamProvider.java:
+    ☐ - Update capability system to LazyOptional
+    ☐ - Update ICapabilityProvider implementation
+    ☐ - Update capability registration
+    ☐ - Update capability attachment
+
+### 12.2 Capability System
+☐ - Update capability registration (changed significantly)
+☐ - Use RegisterCapabilitiesEvent
+☐ - Update capability attachment with AttachCapabilitiesEvent
+☐ - Update capability invalidation
+☐ - Update capability serialization
+
+---
+
+## Phase 13: Plugin Integrations
+
+### 13.1 CraftTweaker Plugin
+☐ - ConditionCrTItem.java: Check CrT 1.20.1 API
+☐ - ConditionCrTLiquid.java: Update fluid handling
+☐ - CrTPlugin.java: Update ZenScript integration
+☐ - RendererCrTItem.java: Update rendering
+☐ - RendererCrTLiquid.java: Update rendering
+☐ - Update @ZenClass, @ZenMethod annotations if changed
+☐ - Update IItemStack wrapper usage
+
+### 13.2 GameStages Plugin
+☐ - Check if GameStages exists for 1.20.1
+☐ - Update API calls if available
+☐ - Consider alternative if not ported
+
+### 13.3 ItemStages Plugin
+☐ - Check if ItemStages exists for 1.20.1
+☐ - Update API calls if available
+☐ - Consider alternative if not ported
+
+### 13.4 Reskillable Plugin
+☐ - Check if Reskillable exists for 1.20.1
+☐ - Update skill system integration
+☐ - Update API calls
+
+### 13.5 GrandEconomy Plugin
+☐ - Check if GrandEconomy exists for 1.20.1
+☐ - Update economy integration
+☐ - Consider alternatives
+
+### 13.6 HWYLA Plugin
+☐ - Replace with WTHIT or Jade for 1.20.1
+☐ - Update IWailaDataProvider → new API
+☐ - Update tooltip registration
+☐ - Update NBT data passing
+
+### 13.7 JEI Plugin
+☐ - Update to JEI API for 1.20.1
+☐ - Update IModPlugin implementation
+☐ - Update recipe registration
+☐ - Update GUI handler registration
+☐ - Update ingredient helper usage
+
+### 13.8 The One Probe (TOP) Plugin
+☐ - Check TOP 1.20.1 availability
+☐ - Update IProbeInfoProvider implementation
+☐ - Update probe data providers
+
+### 13.9 TogetherForever Plugin
+☐ - Check if mod exists for 1.20.1
+☐ - Update integration code
+
+---
+
+## Phase 14: Rendering
+
+### 14.1 Update ConditionRenderer.java
+☐ - Update rendering calls to use GuiGraphics
+☐ - Replace GlStateManager with RenderSystem
+☐ - Update matrix stack usage
+☐ - Update vertex buffer usage if needed
+☐ - Update color formatting
+
+### 14.2 Update EventShowItemCondition.java
+☐ - Update RenderGameOverlayEvent usage (renamed)
+☐ - Update to RenderGuiOverlayEvent
+☐ - Update rendering pipeline
+☐ - Update matrix transformations
+
+### 14.3 Item/Block Rendering
+☐ - Update any custom item renderers
+☐ - Update any custom block entity renderers
+☐ - Use BlockEntityRenderer<T> interface
+☐ - Update renderer registration in client setup
+
+---
+
+## Phase 15: Resources & Assets
+
+### 15.1 Update Language Files
+☐ - Move from assets/researchtable/lang/*.lang
+☐ - Rename to *.json format
+☐ - Convert to JSON structure: {"key": "value"}
+☐ - Update all translation keys to match new names
+☐ - Update en_us.lang → en_us.json
+☐ - Update pt_br.lang → pt_br.json
+☐ - Update ru_ru.lang → ru_ru.json
+☐ - Update zh_cn.lang → zh_cn.json
+
+### 15.2 Update Recipes
+☐ - Update recipe JSON format (mostly compatible)
+☐ - Check reset.json for format changes
+☐ - Add recipe serializers if custom recipes
+☐ - Update recipe types registration
+
+### 15.3 Update Models
+☐ - Verify block models still work
+☐ - Verify item models still work
+☐ - Update any deprecated model properties
+☐ - Check texture references
+
+### 15.4 Update Textures
+☐ - Verify all textures load correctly
+☐ - Update any texture references in code
+☐ - Check for deprecated texture locations
+
+---
+
+## Phase 16: Configuration
+
+### 16.1 Update ModConfig.java
+☐ - Remove old @Config annotation system
+☐ - Implement ForgeConfigSpec
+☐ - Create ConfigBuilder
+☐ - Define config values with .define(), .defineInRange(), etc.
+☐ - Split into CLIENT, COMMON, SERVER configs
+☐ - Register configs in mod constructor
+☐ - Update config value access throughout code
+☐ - Add config reload handling if needed
+
+---
+
+## Phase 17: Testing & Debugging
+
+### 17.1 Initial Compilation
+☐ - Run gradlew build
+☐ - Fix all compilation errors
+☐ - Update deprecation warnings
+☐ - Ensure no errors in IDE
+
+### 17.2 Launch Testing
+☐ - Test client launch
+☐ - Test server launch
+☐ - Check for crash logs
+☐ - Fix class loading issues
+☐ - Fix missing dependencies
+
+### 17.3 Functionality Testing
+☐ - Test block placement and removal
+☐ - Test GUI opening
+☐ - Test research system
+☐ - Test data persistence
+☐ - Test multiplayer sync
+☐ - Test all commands
+☐ - Test all rewards
+☐ - Test all conditions
+☐ - Test team functionality
+
+### 17.4 Integration Testing
+☐ - Test each plugin integration
+☐ - Verify JEI integration
+☐ - Verify WTHIT/Jade integration
+☐ - Test with other mods
+☐ - Check for conflicts
+
+### 17.5 Performance Testing
+☐ - Check for memory leaks
+☐ - Profile rendering performance
+☐ - Test with multiple research tables
+☐ - Test with large research files
+
+---
+
+## Phase 18: Polish & Cleanup
+
+### 18.1 Code Cleanup
+☐ - Remove unused imports
+☐ - Remove commented-out 1.12.2 code
+☐ - Update all JavaDoc comments
+☐ - Apply consistent code formatting
+☐ - Remove deprecated API usage
+
+### 18.2 Resource Cleanup
+☐ - Remove unused textures
+☐ - Remove unused models
+☐ - Remove unused language keys
+☐ - Optimize texture sizes if needed
+
+### 18.3 Documentation
+☐ - Update README.md with 1.20.1 info
+☐ - Update build instructions
+☐ - Document API changes for addon developers
+☐ - Create migration guide for users
+☐ - Update license information if needed
+
+---
+
+## Phase 19: Build & Distribution
+
+### 19.1 Final Build
+☐ - Clean build: gradlew clean build
+☐ - Test JAR in clean instance
+☐ - Verify no missing resources
+☐ - Check file size reasonable
+
+### 19.2 Version Control
+☐ - Commit all changes with clear messages
+☐ - Tag release version
+☐ - Update version numbers
+☐ - Create changelog
+
+### 19.3 Release Preparation
+☐ - Test with recommended Forge version
+☐ - Create CurseForge/Modrinth page
+☐ - Write release notes
+☐ - Prepare screenshots/videos
+☐ - List compatible mod versions
+
+---
+
+## Phase 20: Known Breaking Changes to Watch For
+
+### API Changes
+☐ - World → Level (ServerLevel, ClientLevel)
+☐ - EntityPlayer → Player (ServerPlayer, LocalPlayer)
+☐ - EnumFacing → Direction
+☐ - EnumHand → InteractionHand
+☐ - EnumActionResult → InteractionResult
+☐ - BlockPos is immutable (no setPos)
+☐ - Vec3d → Vec3
+☐ - AxisAlignedBB → AABB
+☐ - RayTraceResult → HitResult hierarchy
+
+### Removed Systems
+☐ - Metadata system completely removed
+☐ - Old registry events replaced with DeferredRegister
+☐ - Sided proxies removed (use DistExecutor)
+☐ - Old networking system removed
+☐ - Old config system removed
+
+### Behavior Changes
+☐ - BlockState comparison (use .is() not ==)
+☐ - ItemStack.EMPTY instead of null
+☐ - Capability invalidation required
+☐ - Registry objects must use .get()
+☐ - Thread safety more important
+
+---
+
+## Notes & Tips
+
+- Take incremental approach - don't try to change everything at once
+- Commit frequently with working states
+- Test after each major system update
+- Keep 1.12.2 version for reference
+- Check Forge documentation for 1.20.1 specifics
+- Join Forge Discord for help with specific issues
+- Look at other open-source mods that have ported
+- Some dependencies may not be available for 1.20.1 - plan alternatives
+- Performance characteristics may differ - profile if issues arise
+- Client/server separation is stricter in newer versions
+
+## Estimated Time
+- Full port: 40-80 hours depending on experience
+- Core systems: 15-25 hours
+- Plugin integrations: 10-20 hours
+- Testing & debugging: 10-20 hours
+- Polish & documentation: 5-15 hours
